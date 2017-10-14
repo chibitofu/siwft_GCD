@@ -37,28 +37,27 @@ class ViewController: UITableViewController {
         
         if navigationController?.tabBarItem.tag == 0 {
             urlString = "https://api.whitehouse.gov/v1/petitions.json?limit=100"
-        } else {
+        } else if navigationController?.tabBarItem.tag == 1{
             urlString = "https://api.whitehouse.gov/v1/petitions.json?signatureCountFloor=1000&limit=100"
+        } else {
+            urlString = "https://api.whitehouse.gov/v1/petitions.json?status=pending%20response&limit=100"
         }
         
+        //Translates an api call using SwiftyJSON.
         if let url = URL(string: urlString) {
             if let data = try? String(contentsOf: url) {
                 let json = JSON(parseJSON: data)
                 
                 if json["metadata"]["responseInfo"]["status"].intValue == 200 {
                     parse(json: json)
-                } else {
-                    showError()
+                    return
                 }
-            } else {
-                showError()
             }
-        } else {
-            showError()
         }
-        // Do any additional setup after loading the view, typically from a nib.
+        showError()
     }
 
+    //Takes json and turns it into a dictionary.
     func parse(json: JSON) {
         for result in json["results"].arrayValue {
             let title = result["title"].stringValue
@@ -71,6 +70,7 @@ class ViewController: UITableViewController {
         tableView.reloadData()
     }
     
+    //General error message for api calls.
     func showError() {
         let ac = UIAlertController(title: "Loading error", message: "There was a problem loading the feed; please check your connection and try again.", preferredStyle: .alert)
         ac.addAction(UIAlertAction(title: "OK", style: .default))
