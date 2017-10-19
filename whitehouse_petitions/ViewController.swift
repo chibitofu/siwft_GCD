@@ -33,6 +33,10 @@ class ViewController: UITableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        performSelector(inBackground: #selector(fetchJSON), with: nil)
+    }
+    
+    @objc func fetchJSON() {
         let urlString: String
         
         if navigationController?.tabBarItem.tag == 0 {
@@ -49,12 +53,13 @@ class ViewController: UITableViewController {
                 let json = JSON(parseJSON: data)
                 
                 if json["metadata"]["responseInfo"]["status"].intValue == 200 {
-                    parse(json: json)
+                    self.parse(json: json)
                     return
                 }
             }
         }
-        showError()
+        
+        performSelector(onMainThread: #selector(showError), with: nil, waitUntilDone: false)
     }
 
     //Takes json and turns it into a dictionary.
@@ -65,16 +70,20 @@ class ViewController: UITableViewController {
             let sigs = result["signatureCount"].stringValue
             let obj = ["title": title, "body": body, "sigs": sigs]
             petitions.append(obj)
+            return
         }
         
-        tableView.reloadData()
+        tableView.performSelector(onMainThread: #selector(UITableView.reloadData), with: nil, waitUntilDone: false)
     }
     
     //General error message for api calls.
-    func showError() {
-        let ac = UIAlertController(title: "Loading error", message: "There was a problem loading the feed; please check your connection and try again.", preferredStyle: .alert)
-        ac.addAction(UIAlertAction(title: "OK", style: .default))
-        present(ac, animated: true)
+    @objc func showError() {
+        DispatchQueue.main.async { [unowned self] in
+            let ac = UIAlertController(title: "Loading error", message: "There was a problem loading the feed; please check your connection and try again.", preferredStyle: .alert)
+            ac.addAction(UIAlertAction(title: "OK", style: .default))
+            self.present(ac, animated: true)
+        }
+        
     }
     
     override func didReceiveMemoryWarning() {
